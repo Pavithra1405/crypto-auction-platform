@@ -3,6 +3,12 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import authRoutes from "./routes/auth.js";
+import auctionRoutes from "./routes/auctions.js";
+import bidRoutes from "./routes/bids.js";
+import blockchainRoutes from "./routes/blockchain.js";
+import ratingRoutes from "./routes/ratings.js";
+import userRoutes from "./routes/users.js";
 
 dotenv.config();
 
@@ -26,6 +32,15 @@ app.use(
 app.get("/api/test", (req, res) => {
   res.json({ message: "Backend working 🚀" });
 });
+
+
+// ===== API ROUTES =====
+app.use("/api/auth", authRoutes);
+app.use("/api/auctions", auctionRoutes);
+app.use("/api/bids", bidRoutes);
+app.use("/api/blockchain", blockchainRoutes);
+app.use("/api/ratings", ratingRoutes);
+app.use("/api/users", userRoutes);
 
 // Serve frontend build
 app.use(express.static(join(__dirname, "dist")));
