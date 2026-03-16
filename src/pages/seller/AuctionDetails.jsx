@@ -18,6 +18,7 @@ const SellerAuctionDetails = () => {
   const [auction, setAuction] = useState(null);
   const [bids, setBids] = useState([]);
   const [sendingCongrats, setSendingCongrats] = useState(false);
+  const [activating, setActivating] = useState(false);
 
   useEffect(() => {
     fetchAuctionDetails();
@@ -30,7 +31,6 @@ const SellerAuctionDetails = () => {
       const response = await auctionAPI.getOne(id);
       const auctionData = response?.data?.auction;
       
-      // Verify this auction belongs to logged-in seller
       if (auctionData.seller._id !== user.id) {
         toast.error('This auction does not belong to you');
         navigate('/seller');
@@ -56,15 +56,25 @@ const SellerAuctionDetails = () => {
     }
   };
 
+  const handleActivateAuction = async () => {
+    try {
+      setActivating(true);
+      await auctionAPI.update(auction._id, { status: 'active' });
+      toast.success('Auction activated successfully!');
+      fetchAuctionDetails();
+    } catch (error) {
+      toast.error('Failed to activate auction');
+    } finally {
+      setActivating(false);
+    }
+  };
+
   const handleSendCongrats = async () => {
     try {
       if (!auction?._id) return;
-
       setSendingCongrats(true);
       const res = await auctionAPI.sendCongrats(auction._id);
-
       toast.success(res?.message || 'Congrats email sent');
-
       setAuction((prev) =>
         prev
           ? {
@@ -85,12 +95,9 @@ const SellerAuctionDetails = () => {
     const now = new Date();
     const end = new Date(endDate);
     const diff = end - now;
-    
     if (diff <= 0) return 'Ended';
-    
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    
     if (days > 0) return `${days} day${days > 1 ? 's' : ''} ${hours} hour${hours > 1 ? 's' : ''}`;
     return `${hours} hour${hours > 1 ? 's' : ''}`;
   };
@@ -120,13 +127,12 @@ const SellerAuctionDetails = () => {
       color: '#f1f5f9',
     }).then((result) => {
       if (result.isConfirmed) {
-        // TODO: Implement close auction API
         toast.success('Auction closed successfully');
       }
     });
   };
 
-  const chartData = bids.length > 0 
+  const chartData = bids.length > 0
     ? bids.slice().reverse().map((bid) => ({
         time: formatTimeAgo(bid.createdAt),
         price: bid.bidAmount,
@@ -193,8 +199,8 @@ const SellerAuctionDetails = () => {
                 </div>
               </div>
               <div className={`px-4 py-2 rounded-full text-sm font-semibold ${
-                auction.status === 'active' ? 'bg-green-900/30 text-green-400' : 
-                auction.status === 'completed' ? 'bg-gray-700 text-gray-400' : 
+                auction.status === 'active' ? 'bg-green-900/30 text-green-400' :
+                auction.status === 'completed' ? 'bg-gray-700 text-gray-400' :
                 'bg-orange-900/30 text-orange-400'
               }`}>
                 {auction.status.toUpperCase()}
@@ -336,7 +342,7 @@ const SellerAuctionDetails = () => {
               <div>
                 <p className="text-sm text-gray-400 mb-1">Average Bid</p>
                 <p className="text-2xl font-bold text-gray-100">
-                  ${bids.length > 0 
+                  ${bids.length > 0
                     ? Math.round(bids.reduce((sum, b) => sum + b.bidAmount, 0) / bids.length).toLocaleString()
                     : '0'}
                 </p>
@@ -351,6 +357,46 @@ const SellerAuctionDetails = () => {
               </div>
             </div>
           </motion.div>
+
+          {/* Activate Auction Button - only for pending */}
+          {auction.status === 'pending' && (
+            <motion.div
+              initial={{ x: 20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="card"
+            >
+              <h3 className="text-lg font-semibold mb-4 text-gray-200">Auction Actions</h3>
+              <p className="text-sm text-gray-400 mb-4">
+                Your auction is pending. Activate it so bidders can start placing bids.
+              </p>
+              <button
+                onClick={handleActivateAuction}
+                disabled={activating}
+                className="btn btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {activating ? 'Activating...' : '✅ Activate Auction'}
+              </button>
+            </motion.div>
+          )}
+
+          {/* Close Auction Button - only for active */}
+          {auction.status === 'active' && (
+            <motion.div
+              initial={{ x: 20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="card"
+            >
+              <h3 className="text-lg font-semibold mb-4 text-gray-200">Auction Actions</h3>
+              <button
+                onClick={handleCloseAuction}
+                className="btn w-full bg-red-600 hover:bg-red-700 text-white"
+              >
+                🔴 Close Auction Early
+              </button>
+            </motion.div>
+          )}
 
           {/* Winning Bidder */}
           {highestBidder && (
@@ -406,10 +452,6 @@ const SellerAuctionDetails = () => {
             </div>
           </motion.div>
 
-          {/* Actions */}
-          {/* Actions (active auction) */}
-         
-
           {/* Congrats email (completed auction) */}
           {auction.status === 'completed' && auction.highestBidder && (
             <motion.div
@@ -419,7 +461,6 @@ const SellerAuctionDetails = () => {
               className="card"
             >
               <h3 className="text-lg font-semibold mb-4 text-gray-200">Winner Notification</h3>
-
               {auction.congratsSent ? (
                 <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4">
                   <div className="flex items-center space-x-2">
