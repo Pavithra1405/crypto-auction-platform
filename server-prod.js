@@ -28,6 +28,21 @@ app.use(
   })
 );
 
+// Import routes
+import authRoutes from "./routes/auth.js";
+import auctionRoutes from "./routes/auctions.js";
+import bidRoutes from "./routes/bids.js";
+import blockchainRoutes from "./routes/blockchain.js";
+import ratingRoutes from "./routes/ratings.js";
+import userRoutes from "./routes/users.js";
+
+// Use routes
+app.use("/api/auth", authRoutes);
+app.use("/api/auctions", auctionRoutes);
+app.use("/api/bids", bidRoutes);
+app.use("/api/blockchain", blockchainRoutes);
+app.use("/api/ratings", ratingRoutes);
+app.use("/api/users", userRoutes);
 // ===== TEST API =====
 app.get("/api/test", (req, res) => {
   res.json({ message: "Backend working 🚀" });
