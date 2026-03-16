@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background-primary text-gray-100 antialiased;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+  }
+
+  input, textarea, select {
+    @apply bg-background-tertiary border-border text-gray-100;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    @apply outline-none ring-2 ring-primary-500 border-primary-500;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95;
+  }
+
+  .btn-primary {
+    @apply bg-gradient-primary text-white shadow-glow hover:shadow-glow-lg;
+  }
+
+  .btn-secondary {
+    @apply bg-background-tertiary text-gray-100 border-2 border-border hover:border-primary-500 hover:text-primary-400;
+  }
+
+  .btn-accent {
+    @apply bg-gradient-accent text-white shadow-glow-sm hover:shadow-glow;
+  }
+
+  .card {
+    @apply bg-background-card border border-border rounded-xl p-6 shadow-card transition-all duration-300;
+  }
+
+  .card-hover {
+    @apply hover:shadow-card-hover hover:border-primary-500 hover:-translate-y-1;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 rounded-lg bg-background-tertiary border-2 border-border text-gray-100 placeholder-gray-500 transition-all duration-200;
+  }
+
+  .input-field:focus {
+    @apply border-primary-500 ring-2 ring-primary-500/30;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary-400 to-accent-cyan bg-clip-text text-transparent;
+  }
+
+  .page-container {
+    @apply min-h-screen bg-gradient-dark-blue;
+  }
+
+  .section-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* AOS Animation Overrides */
+[data-aos] {
+  pointer-events: auto;
+}
+
+/* Skeleton Loading */
+.skeleton {
+  @apply bg-background-tertiary animate-pulse rounded;
+}

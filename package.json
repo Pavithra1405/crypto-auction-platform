@@ -1,0 +1,44 @@
+{
+  "name": "crypto-auction-platform",
+  "version": "1.0.0",
+  "description": "MERN Stack Crypto Auction Platform with Dark Blue Theme",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "start": "node server-prod.js",
+    "preview": "vite preview",
+    "clean": "rimraf dist .vite",
+    "server": "cd server && npm run dev",
+    "seed": "cd server && npm run seed"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^3.3.4",
+    "@tsparticles/react": "^3.0.0",
+    "@tsparticles/slim": "^3.9.1",
+    "aos": "^2.3.4",
+    "axios": "^1.6.7",
+    "crypto-js": "^4.2.0",
+    "date-fns": "^3.3.1",
+    "express": "^4.18.2",
+    "framer-motion": "^11.0.5",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-hook-form": "^7.50.0",
+    "react-hot-toast": "^2.4.1",
+    "react-router-dom": "^6.22.0",
+    "recharts": "^2.12.0",
+    "sweetalert2": "^11.10.5",
+    "sweetalert2-react-content": "^5.0.7",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.35",
+    "rimraf": "^6.1.2",
+    "tailwindcss": "^3.4.1",
+    "vite": "^7.3.1"
+  }
+}
