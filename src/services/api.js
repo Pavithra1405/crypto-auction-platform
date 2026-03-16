@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Base API URL
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // Create axios instance
 const api = axios.create({
@@ -29,7 +29,8 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    const message = error.response?.data?.message || error.message || 'Something went wrong';
+    const message =
+      error.response?.data?.message || error.message || 'Something went wrong';
     return Promise.reject(new Error(message));
   }
 );
@@ -77,9 +78,12 @@ export const userAPI = {
 // Rating API
 export const ratingAPI = {
   submitRating: (data) => api.post('/ratings', data),
-  getSellerRatings: (sellerId, params) => api.get(`/ratings/seller/${sellerId}`, { params }),
-  getMyRatingForAuction: (auctionId) => api.get(`/ratings/auction/${auctionId}/my-rating`),
-  canRateAuction: (auctionId) => api.get(`/ratings/auction/${auctionId}/can-rate`),
+  getSellerRatings: (sellerId, params) =>
+    api.get(`/ratings/seller/${sellerId}`, { params }),
+  getMyRatingForAuction: (auctionId) =>
+    api.get(`/ratings/auction/${auctionId}/my-rating`),
+  canRateAuction: (auctionId) =>
+    api.get(`/ratings/auction/${auctionId}/can-rate`),
   getMyRatings: () => api.get('/ratings/my-ratings'),
 };
 
