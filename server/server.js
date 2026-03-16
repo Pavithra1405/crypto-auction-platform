@@ -18,31 +18,11 @@ const app = express();
 connectDB();
 
 // Middleware
-const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:1234')
-  .split(',')
-  .map((o) => o.trim())
-  .filter(Boolean);
+app.use(cors({
+  origin: 'https://crypto-auction-platform.vercel.app',
+  credentials: true,
+}));
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow non-browser clients or same-origin
-      if (!origin) return callback(null, true);
-
-      // In development, allow LAN access easily
-      if ((process.env.NODE_ENV || 'development') !== 'production') {
-        return callback(null, true);
-      }
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      return callback(new Error(`CORS blocked for origin: ${origin}`));
-    },
-    credentials: true,
-  })
-);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -88,7 +68,7 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
