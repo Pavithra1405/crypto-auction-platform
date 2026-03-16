@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
@@ -59,10 +59,13 @@ const SellerAuctionDetails = () => {
   const handleActivateAuction = async () => {
     try {
       setActivating(true);
-      await auctionAPI.update(auction._id, { status: 'active' });
+      const auctionId = id;
+      console.log('Activating auction ID:', auctionId);
+      await auctionAPI.update(auctionId, { status: 'active' });
       toast.success('Auction activated successfully!');
-      fetchAuctionDetails();
+      await fetchAuctionDetails();
     } catch (error) {
+      console.error('Activate error:', error);
       toast.error('Failed to activate auction');
     } finally {
       setActivating(false);
@@ -125,9 +128,15 @@ const SellerAuctionDetails = () => {
       confirmButtonText: 'Yes, Close It',
       background: '#1a2332',
       color: '#f1f5f9',
-    }).then((result) => {
+    }).then(async (result) => {
       if (result.isConfirmed) {
-        toast.success('Auction closed successfully');
+        try {
+          await auctionAPI.update(id, { status: 'completed' });
+          toast.success('Auction closed successfully');
+          fetchAuctionDetails();
+        } catch (error) {
+          toast.error('Failed to close auction');
+        }
       }
     });
   };
@@ -169,7 +178,6 @@ const SellerAuctionDetails = () => {
 
   return (
     <div className="max-w-6xl">
-      {/* Back Button */}
       <motion.button
         initial={{ x: -20, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
@@ -180,9 +188,7 @@ const SellerAuctionDetails = () => {
       </motion.button>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Auction Header */}
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -252,7 +258,6 @@ const SellerAuctionDetails = () => {
             )}
           </motion.div>
 
-          {/* Bidding Chart */}
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -278,7 +283,6 @@ const SellerAuctionDetails = () => {
             </ResponsiveContainer>
           </motion.div>
 
-          {/* Bids List */}
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -319,9 +323,7 @@ const SellerAuctionDetails = () => {
           </motion.div>
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-6">
-          {/* Quick Stats */}
           <motion.div
             initial={{ x: 20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
@@ -358,7 +360,7 @@ const SellerAuctionDetails = () => {
             </div>
           </motion.div>
 
-          {/* Activate Auction Button - only for pending */}
+          {/* Activate Auction - only for pending */}
           {auction.status === 'pending' && (
             <motion.div
               initial={{ x: 20, opacity: 0 }}
@@ -380,7 +382,7 @@ const SellerAuctionDetails = () => {
             </motion.div>
           )}
 
-          {/* Close Auction Button - only for active */}
+          {/* Close Auction - only for active */}
           {auction.status === 'active' && (
             <motion.div
               initial={{ x: 20, opacity: 0 }}
@@ -398,7 +400,6 @@ const SellerAuctionDetails = () => {
             </motion.div>
           )}
 
-          {/* Winning Bidder */}
           {highestBidder && (
             <motion.div
               initial={{ x: 20, opacity: 0 }}
@@ -423,7 +424,6 @@ const SellerAuctionDetails = () => {
             </motion.div>
           )}
 
-          {/* Timeline */}
           <motion.div
             initial={{ x: 20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
@@ -452,7 +452,6 @@ const SellerAuctionDetails = () => {
             </div>
           </motion.div>
 
-          {/* Congrats email (completed auction) */}
           {auction.status === 'completed' && auction.highestBidder && (
             <motion.div
               initial={{ x: 20, opacity: 0 }}
@@ -496,3 +495,4 @@ const SellerAuctionDetails = () => {
 };
 
 export default SellerAuctionDetails;
+
