@@ -128,7 +128,7 @@ Made with ❤️ by [Your Name]
 
 
 
-PS F:\mern projects\crypto_bid> git remote set-url origin https://pamilafantazy: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@github.com/pamilafantazy/crypto_bid.git
+
 PS F:\mern projects\crypto_bid> git push -u origin main
 Enumerating objects: 128, done.
 Counting objects: 100% (128/128), done.
