@@ -1,14 +1,15 @@
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import { fileURLToPath } from "url";
-import { dirname, join } from "path";
-import authRoutes from "./routes/auth.js";
-import auctionRoutes from "./routes/auctions.js";
-import bidRoutes from "./routes/bids.js";
-import blockchainRoutes from "./routes/blockchain.js";
-import ratingRoutes from "./routes/ratings.js";
-import userRoutes from "./routes/users.js";
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+import authRoutes from './server/routes/auth.js';
+import auctionsRoutes from './server/routes/auctions.js';
+import bidsRoutes from './server/routes/bids.js';
+import blockchainRoutes from './server/routes/blockchain.js';
+import ratingsRoutes from './server/routes/ratings.js';
+import usersRoutes from './server/routes/users.js';
 
 dotenv.config();
 
@@ -18,53 +19,29 @@ const __dirname = dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// Middleware
 app.use(express.json());
+app.use(cors({
+  origin: process.env.CLIENT_URL,
+  credentials: true,
+}));
 
-app.use(
-  cors({
-    origin: process.env.CLIENT_URL,
-    credentials: true,
-  })
-);
-
-// Import routes
-import authRoutes from "./routes/auth.js";
-import auctionRoutes from "./routes/auctions.js";
-import bidRoutes from "./routes/bids.js";
-import blockchainRoutes from "./routes/blockchain.js";
-import ratingRoutes from "./routes/ratings.js";
-import userRoutes from "./routes/users.js";
-
-// Use routes
-app.use("/api/auth", authRoutes);
-app.use("/api/auctions", auctionRoutes);
-app.use("/api/bids", bidRoutes);
-app.use("/api/blockchain", blockchainRoutes);
-app.use("/api/ratings", ratingRoutes);
-app.use("/api/users", userRoutes);
-// ===== TEST API =====
-app.get("/api/test", (req, res) => {
-  res.json({ message: "Backend working 🚀" });
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'Backend working 🚀' });
 });
 
+app.use('/api/auth', authRoutes);
+app.use('/api/auctions', auctionsRoutes);
+app.use('/api/bids', bidsRoutes);
+app.use('/api/blockchain', blockchainRoutes);
+app.use('/api/ratings', ratingsRoutes);
+app.use('/api/users', usersRoutes);
 
-// ===== API ROUTES =====
-app.use("/api/auth", authRoutes);
-app.use("/api/auctions", auctionRoutes);
-app.use("/api/bids", bidRoutes);
-app.use("/api/blockchain", blockchainRoutes);
-app.use("/api/ratings", ratingRoutes);
-app.use("/api/users", userRoutes);
-
-// Serve frontend build
-app.use(express.static(join(__dirname, "dist")));
-
-app.get("*", (req, res) => {
-  res.sendFile(join(__dirname, "dist", "index.html"));
+app.use(express.static(join(__dirname, 'dist')));
+app.get('*', (req, res) => {
+  res.sendFile(join(__dirname, 'dist', 'index.html'));
 });
 
-app.listen(PORT, "0.0.0.0", () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🌐 Environment: ${process.env.NODE_ENV || "production"}`);
+  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'production'}`);
 });
