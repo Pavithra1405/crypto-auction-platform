@@ -52,7 +52,7 @@ const auctionSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: ['pending', 'active', 'completed', 'cancelled'],
-    default: 'active',
+    default: 'pending',
   },
   highestBidder: {
     type: mongoose.Schema.Types.ObjectId,
@@ -111,9 +111,8 @@ auctionSchema.methods.isActive = function() {
 auctionSchema.pre('save', function(next) {
   const now = new Date();
   
-  if (now < this.startDate) {
-    this.status = 'pending';
-  } else if (now > this.endDate && this.status === 'active') {
+  // Only auto-complete if end date has passed
+  if (now > this.endDate && this.status === 'active') {
     this.status = 'completed';
   }
   
