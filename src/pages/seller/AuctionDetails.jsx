@@ -7,6 +7,8 @@ import withReactContent from 'sweetalert2-react-content';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
 import { auctionAPI, bidAPI } from '../../services/api';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const MySwal = withReactContent(Swal);
 
@@ -30,13 +32,11 @@ const SellerAuctionDetails = () => {
       setLoading(true);
       const response = await auctionAPI.getOne(id);
       const auctionData = response?.data?.auction;
-      
       if (auctionData.seller._id !== user.id) {
         toast.error('This auction does not belong to you');
         navigate('/seller');
         return;
       }
-      
       setAuction(auctionData);
     } catch (error) {
       toast.error('Failed to fetch auction details');
@@ -60,7 +60,6 @@ const SellerAuctionDetails = () => {
     try {
       setActivating(true);
       const auctionId = id;
-      console.log('Activating auction ID:', auctionId);
       await auctionAPI.update(auctionId, { status: 'active' });
       toast.success('Auction activated successfully!');
       await fetchAuctionDetails();
@@ -92,6 +91,62 @@ const SellerAuctionDetails = () => {
     } finally {
       setSendingCongrats(false);
     }
+  };
+
+  const handleDownloadPDF = () => {
+    const doc = new jsPDF();
+
+    // Title
+    doc.setFontSize(20);
+    doc.setTextColor(0, 115, 255);
+    doc.text('Crypto Auction Report', 14, 20);
+
+    // Auction Info
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Auction: ${auction.cryptoName} (${auction.cryptoSymbol})`, 14, 35);
+    doc.text(`Status: ${auction.status.toUpperCase()}`, 14, 43);
+    doc.text(`Quantity: ${auction.quantity} Units`, 14, 51);
+    doc.text(`Base Price: $${auction.basePrice.toLocaleString()}`, 14, 59);
+    doc.text(`Current Bid: $${(auction.currentBid || auction.basePrice).toLocaleString()}`, 14, 67);
+    doc.text(`Start Date: ${new Date(auction.startDate).toLocaleDateString()}`, 14, 75);
+    doc.text(`End Date: ${new Date(auction.endDate).toLocaleDateString()}`, 14, 83);
+    doc.text(`Blockchain Hash: ${auction.blockchainHash}`, 14, 91);
+
+    // Winner info
+    if (auction.highestBidder) {
+      doc.setTextColor(0, 150, 0);
+      doc.text(`Winner: ${auction.highestBidder.name}`, 14, 103);
+      doc.setTextColor(0, 0, 0);
+    }
+
+    // Bids Table
+    if (bids.length > 0) {
+      doc.setFontSize(14);
+      doc.setTextColor(0, 115, 255);
+      doc.text('Bid History', 14, 118);
+
+      autoTable(doc, {
+        startY: 124,
+        head: [['#', 'Bidder', 'Amount', 'Time']],
+        body: bids.map((bid, index) => [
+          index + 1,
+          bid.bidder?.name || 'Anonymous',
+          `$${bid.bidAmount.toLocaleString()}`,
+          new Date(bid.createdAt).toLocaleString(),
+        ]),
+        styles: { fontSize: 10 },
+        headStyles: { fillColor: [0, 115, 255] },
+      });
+    } else {
+      doc.setFontSize(11);
+      doc.setTextColor(100, 100, 100);
+      doc.text('No bids placed yet.', 14, 118);
+    }
+
+    // Save
+    doc.save(`auction-report-${auction.cryptoSymbol}-${auction._id}.pdf`);
+    toast.success('PDF downloaded successfully!');
   };
 
   const calculateTimeLeft = (endDate) => {
@@ -178,14 +233,27 @@ const SellerAuctionDetails = () => {
 
   return (
     <div className="max-w-6xl">
-      <motion.button
-        initial={{ x: -20, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        onClick={() => navigate('/seller')}
-        className="btn btn-secondary mb-6"
-      >
-        ← Back to Dashboard
-      </motion.button>
+      <div className="flex items-center justify-between mb-6">
+        <motion.button
+          initial={{ x: -20, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          onClick={() => navigate('/seller')}
+          className="btn btn-secondary"
+        >
+          ← Back to Dashboard
+        </motion.button>
+
+        {/* Download PDF Button */}
+        <motion.button
+          initial={{ x: 20, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          onClick={handleDownloadPDF}
+          className="btn btn-primary flex items-center space-x-2"
+        >
+          <span>📄</span>
+          <span>Download Report (PDF)</span>
+        </motion.button>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
@@ -360,7 +428,6 @@ const SellerAuctionDetails = () => {
             </div>
           </motion.div>
 
-          {/* Activate Auction - only for pending */}
           {auction.status === 'pending' && (
             <motion.div
               initial={{ x: 20, opacity: 0 }}
@@ -382,7 +449,6 @@ const SellerAuctionDetails = () => {
             </motion.div>
           )}
 
-          {/* Close Auction - only for active */}
           {auction.status === 'active' && (
             <motion.div
               initial={{ x: 20, opacity: 0 }}
@@ -495,4 +561,3 @@ const SellerAuctionDetails = () => {
 };
 
 export default SellerAuctionDetails;
-
