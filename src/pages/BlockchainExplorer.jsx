@@ -36,86 +36,37 @@ const BlockchainExplorer = () => {
     }
   };
 
-  /* OLD MOCK DATA
-  useEffect(() => {
-    const generateBlockchain = () => {
-      const blockchain = [];
-      let previousHash = '0000000000000000000000000000000000000000000000000000000000000000';
+  const handleDownloadCSV = () => {
+    if (blocks.length === 0) {
+      toast.error('No blockchain data to download');
+      return;
+    }
 
-      // Genesis block
-      const genesisBlock = {
-        index: 0,
-        timestamp: new Date('2026-01-01').toISOString(),
-        data: {
-          type: 'genesis',
-          message: 'Genesis Block - Crypto Auction Platform Initialized',
-        },
-        previousHash: '0',
-        hash: '',
-      };
-      genesisBlock.hash = calculateHash(genesisBlock);
-      blockchain.push(genesisBlock);
-      previousHash = genesisBlock.hash;
+    const headers = ['Index', 'Type', 'Timestamp', 'Hash', 'Previous Hash', 'Data'];
 
-      // Auction blocks
-      const auctions = [
-        { cryptoName: 'Bitcoin', cryptoSymbol: 'BTC', quantity: 0.5, basePrice: 25000, seller: 'John Doe' },
-        { cryptoName: 'Ethereum', cryptoSymbol: 'ETH', quantity: 10, basePrice: 2000, seller: 'Jane Smith' },
-        { cryptoName: 'Cardano', cryptoSymbol: 'ADA', quantity: 1000, basePrice: 500, seller: 'Bob Wilson' },
-      ];
+    const rows = blocks.map(block => [
+      block.index,
+      block.type || block.data?.type || 'N/A',
+      new Date(block.timestamp).toLocaleString(),
+      block.hash || 'N/A',
+      block.previousHash || 'N/A',
+      JSON.stringify(block.data).replace(/,/g, ';'),
+    ]);
 
-      auctions.forEach((auction, i) => {
-        const block = {
-          index: i + 1,
-          timestamp: new Date(Date.now() - (auctions.length - i) * 86400000).toISOString(),
-          data: {
-            type: 'auction',
-            ...auction,
-          },
-          previousHash: previousHash,
-          hash: '',
-        };
-        block.hash = calculateHash(block);
-        blockchain.push(block);
-        previousHash = block.hash;
-      });
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
 
-      // Bid blocks
-      const bids = [
-        { auctionId: 1, bidder: 'Alice', bidAmount: 25500, cryptoSymbol: 'BTC' },
-        { auctionId: 1, bidder: 'Charlie', bidAmount: 26000, cryptoSymbol: 'BTC' },
-        { auctionId: 2, bidder: 'David', bidAmount: 2100, cryptoSymbol: 'ETH' },
-        { auctionId: 1, bidder: 'Eve', bidAmount: 27500, cryptoSymbol: 'BTC' },
-        { auctionId: 3, bidder: 'Frank', bidAmount: 550, cryptoSymbol: 'ADA' },
-      ];
-
-      bids.forEach((bid, i) => {
-        const block = {
-          index: blockchain.length,
-          timestamp: new Date(Date.now() - (bids.length - i) * 43200000).toISOString(),
-          data: {
-            type: 'bid',
-            ...bid,
-          },
-          previousHash: previousHash,
-          hash: '',
-        };
-        block.hash = calculateHash(block);
-        blockchain.push(block);
-        previousHash = block.hash;
-      });
-
-      return blockchain;
-    };
-
-    const calculateHash = (block) => {
-      const data = block.index + block.timestamp + JSON.stringify(block.data) + block.previousHash;
-      return CryptoJS.SHA256(data).toString();
-    };
-
-    setBlocks(generateBlockchain());
-  }, []); 
-  */
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `blockchain-records-${new Date().toLocaleDateString()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Blockchain CSV downloaded successfully!');
+  };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -130,27 +81,19 @@ const BlockchainExplorer = () => {
 
   const getBlockIcon = (type) => {
     switch (type) {
-      case 'genesis':
-        return '🌟';
-      case 'auction':
-        return '📦';
-      case 'bid':
-        return '💰';
-      default:
-        return '⛓️';
+      case 'genesis': return '🌟';
+      case 'auction': return '📦';
+      case 'bid': return '💰';
+      default: return '⛓️';
     }
   };
 
   const getBlockColor = (type) => {
     switch (type) {
-      case 'genesis':
-        return 'from-purple-500 to-pink-500';
-      case 'auction':
-        return 'from-blue-500 to-cyan-500';
-      case 'bid':
-        return 'from-green-500 to-emerald-500';
-      default:
-        return 'from-gray-500 to-gray-600';
+      case 'genesis': return 'from-purple-500 to-pink-500';
+      case 'auction': return 'from-blue-500 to-cyan-500';
+      case 'bid': return 'from-green-500 to-emerald-500';
+      default: return 'from-gray-500 to-gray-600';
     }
   };
 
@@ -163,9 +106,18 @@ const BlockchainExplorer = () => {
         className="text-center mb-12"
       >
         <h1 className="text-4xl font-bold gradient-text mb-4">Blockchain Explorer</h1>
-        <p className="text-gray-400 text-lg">
+        <p className="text-gray-400 text-lg mb-6">
           Explore the transparent and immutable blockchain ledger
         </p>
+
+        {/* Download CSV Button */}
+        <button
+          onClick={handleDownloadCSV}
+          className="btn btn-primary inline-flex items-center space-x-2"
+        >
+          <span>⛓️</span>
+          <span>Download Blockchain Records (CSV)</span>
+        </button>
       </motion.div>
 
       {/* Loading State */}
@@ -178,155 +130,141 @@ const BlockchainExplorer = () => {
 
       {/* Stats */}
       {!loading && (
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-        {[
-          { label: 'Total Blocks', value: stats?.totalBlocks || blocks.length, icon: '⛓️' },
-          { label: 'Auctions Created', value: stats?.auctionBlocks || blocks.filter(b => b.type === 'auction').length, icon: '📦' },
-          { label: 'Bids Placed', value: stats?.bidBlocks || blocks.filter(b => b.type === 'bid').length, icon: '💰' },
-          { label: 'Chain Valid', value: stats?.isValid ? '✓ Yes' : '✗ No', icon: stats?.isValid ? '✅' : '❌' },
-        ].map((stat, index) => (
-          <motion.div
-            key={index}
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: index * 0.1 }}
-            className="card text-center"
-          >
-            <div className="text-4xl mb-2">{stat.icon}</div>
-            <p className="text-gray-400 text-sm mb-1">{stat.label}</p>
-            <p className="text-2xl font-bold text-gray-100">{stat.value}</p>
-          </motion.div>
-        ))}
-      </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+          {[
+            { label: 'Total Blocks', value: stats?.totalBlocks || blocks.length, icon: '⛓️' },
+            { label: 'Auctions Created', value: stats?.auctionBlocks || blocks.filter(b => b.type === 'auction').length, icon: '📦' },
+            { label: 'Bids Placed', value: stats?.bidBlocks || blocks.filter(b => b.type === 'bid').length, icon: '💰' },
+            { label: 'Chain Valid', value: stats?.isValid ? '✓ Yes' : '✗ No', icon: stats?.isValid ? '✅' : '❌' },
+          ].map((stat, index) => (
+            <motion.div
+              key={index}
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: index * 0.1 }}
+              className="card text-center"
+            >
+              <div className="text-4xl mb-2">{stat.icon}</div>
+              <p className="text-gray-400 text-sm mb-1">{stat.label}</p>
+              <p className="text-2xl font-bold text-gray-100">{stat.value}</p>
+            </motion.div>
+          ))}
+        </div>
       )}
 
       {/* Blockchain Visualization */}
       {!loading && (
-      <div className="max-w-4xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="space-y-6"
-        >
-          {blocks.map((block, index) => (
-            <motion.div
-              key={block.index}
-              initial={{ x: -50, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.5 + index * 0.1 }}
-              data-aos="fade-right"
-              data-aos-delay={index * 50}
-              className="relative"
-            >
-              {/* Connecting Line */}
-              {index < blocks.length - 1 && (
-                <div className="absolute left-8 top-full w-0.5 h-6 bg-gradient-to-b from-primary-500 to-transparent"></div>
-              )}
-
-              {/* Block Card */}
-              <div
-                onClick={() => setSelectedBlock(block.index === selectedBlock ? null : block.index)}
-                className={`card card-hover cursor-pointer transition-all ${
-                  selectedBlock === block.index ? 'border-primary-500 shadow-glow' : ''
-                }`}
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="space-y-6"
+          >
+            {blocks.map((block, index) => (
+              <motion.div
+                key={block.index}
+                initial={{ x: -50, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.5 + index * 0.1 }}
+                className="relative"
               >
-                <div className="flex items-start gap-4">
-                  {/* Block Number */}
-                  <div className={`flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br ${getBlockColor(block.data.type)} flex items-center justify-center shadow-glow`}>
-                    <div className="text-center">
-                      <div className="text-2xl">{getBlockIcon(block.data.type)}</div>
-                      <div className="text-xs font-bold">#{block.index}</div>
-                    </div>
-                  </div>
+                {index < blocks.length - 1 && (
+                  <div className="absolute left-8 top-full w-0.5 h-6 bg-gradient-to-b from-primary-500 to-transparent"></div>
+                )}
 
-                  {/* Block Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-100 capitalize">
-                          {block.type === 'genesis' ? 'Genesis Block' : 
-                           block.type === 'auction' ? `Auction: ${block.data.cryptoName}` :
-                           `Bid on ${block.data.cryptoSymbol}`}
-                        </h3>
-                        <p className="text-sm text-gray-500">{formatDate(block.timestamp)}</p>
+                <div
+                  onClick={() => setSelectedBlock(block.index === selectedBlock ? null : block.index)}
+                  className={`card card-hover cursor-pointer transition-all ${
+                    selectedBlock === block.index ? 'border-primary-500 shadow-glow' : ''
+                  }`}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className={`flex-shrink-0 w-16 h-16 rounded-lg bg-gradient-to-br ${getBlockColor(block.data?.type || block.type)} flex items-center justify-center shadow-glow`}>
+                      <div className="text-center">
+                        <div className="text-2xl">{getBlockIcon(block.data?.type || block.type)}</div>
+                        <div className="text-xs font-bold">#{block.index}</div>
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        block.type === 'genesis' ? 'bg-purple-900/30 text-purple-400' :
-                        block.type === 'auction' ? 'bg-blue-900/30 text-blue-400' :
-                        'bg-green-900/30 text-green-400'
-                      }`}>
-                        {block.type}
-                      </span>
                     </div>
 
-                    {/* Block Preview */}
-                    {!selectedBlock || selectedBlock !== block.index ? (
-                      <div className="text-sm text-gray-400">
-                        {block.type === 'auction' && (
-                          <p>Crypto: {block.data.cryptoName} • Quantity: {block.data.quantity} {block.data.cryptoSymbol}</p>
-                        )}
-                        {block.type === 'bid' && (
-                          <p>Amount: ${block.data.bidAmount?.toLocaleString() || 'N/A'}</p>
-                        )}
-                        {block.type === 'genesis' && (
-                          <p>{block.data.message}</p>
-                        )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-100 capitalize">
+                            {block.data?.type === 'genesis' ? 'Genesis Block' :
+                             block.data?.type === 'auction' ? `Auction: ${block.data.cryptoName}` :
+                             block.data?.type === 'bid' ? `Bid on ${block.data.cryptoSymbol}` :
+                             'Block'}
+                          </h3>
+                          <p className="text-sm text-gray-500">{formatDate(block.timestamp)}</p>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          block.data?.type === 'genesis' ? 'bg-purple-900/30 text-purple-400' :
+                          block.data?.type === 'auction' ? 'bg-blue-900/30 text-blue-400' :
+                          'bg-green-900/30 text-green-400'
+                        }`}>
+                          {block.data?.type || block.type || 'block'}
+                        </span>
                       </div>
-                    ) : (
+
+                      {!selectedBlock || selectedBlock !== block.index ? (
+                        <div className="text-sm text-gray-400">
+                          {block.data?.type === 'auction' && (
+                            <p>Crypto: {block.data.cryptoName} • Quantity: {block.data.quantity} {block.data.cryptoSymbol}</p>
+                          )}
+                          {block.data?.type === 'bid' && (
+                            <p>Amount: ${block.data.bidAmount?.toLocaleString() || 'N/A'}</p>
+                          )}
+                          {block.data?.type === 'genesis' && (
+                            <p>{block.data.message}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          className="mt-4 space-y-3"
+                        >
+                          <div className="bg-background-tertiary rounded-lg p-4 space-y-2">
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Block Hash</p>
+                              <p className="text-xs font-mono text-primary-400 break-all">{block.hash}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Previous Hash</p>
+                              <p className="text-xs font-mono text-gray-400 break-all">{block.previousHash}</p>
+                            </div>
+                          </div>
+
+                          <div className="bg-background-tertiary rounded-lg p-4">
+                            <p className="text-xs text-gray-500 mb-2">Block Data</p>
+                            <pre className="text-xs text-gray-300 overflow-x-auto">
+                              {JSON.stringify(block.data, null, 2)}
+                            </pre>
+                          </div>
+
+                          <div className="flex items-center justify-between text-xs text-gray-500">
+                            <span>Timestamp: {block.timestamp}</span>
+                            <span>Index: {block.index}</span>
+                          </div>
+                        </motion.div>
+                      )}
+                    </div>
+
+                    <div className="flex-shrink-0">
                       <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        className="mt-4 space-y-3"
+                        animate={{ rotate: selectedBlock === block.index ? 180 : 0 }}
+                        className="text-gray-400"
                       >
-                        {/* Hash Information */}
-                        <div className="bg-background-tertiary rounded-lg p-4 space-y-2">
-                          <div>
-                            <p className="text-xs text-gray-500 mb-1">Block Hash</p>
-                            <p className="text-xs font-mono text-primary-400 break-all">
-                              {block.hash}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-500 mb-1">Previous Hash</p>
-                            <p className="text-xs font-mono text-gray-400 break-all">
-                              {block.previousHash}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Block Data */}
-                        <div className="bg-background-tertiary rounded-lg p-4">
-                          <p className="text-xs text-gray-500 mb-2">Block Data</p>
-                          <pre className="text-xs text-gray-300 overflow-x-auto">
-                            {JSON.stringify(block.data, null, 2)}
-                          </pre>
-                        </div>
-
-                        {/* Timestamp */}
-                        <div className="flex items-center justify-between text-xs text-gray-500">
-                          <span>Timestamp: {block.timestamp}</span>
-                          <span>Index: {block.index}</span>
-                        </div>
+                        ▼
                       </motion.div>
-                    )}
-                  </div>
-
-                  {/* Expand Arrow */}
-                  <div className="flex-shrink-0">
-                    <motion.div
-                      animate={{ rotate: selectedBlock === block.index ? 180 : 0 }}
-                      className="text-gray-400"
-                    >
-                      ▼
-                    </motion.div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
-      </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
       )}
 
       {/* Empty State */}
@@ -340,37 +278,37 @@ const BlockchainExplorer = () => {
 
       {/* Info Section */}
       {!loading && blocks.length > 0 && (
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 1 }}
-        className="max-w-4xl mx-auto mt-12 card"
-      >
-        <h3 className="text-xl font-semibold mb-4 text-gray-200">How Our Blockchain Works</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="text-center">
-            <div className="text-4xl mb-3">🔗</div>
-            <h4 className="font-semibold text-gray-200 mb-2">Immutable Chain</h4>
-            <p className="text-sm text-gray-400">
-              Each block is cryptographically linked to the previous block, making tampering impossible
-            </p>
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 1 }}
+          className="max-w-4xl mx-auto mt-12 card"
+        >
+          <h3 className="text-xl font-semibold mb-4 text-gray-200">How Our Blockchain Works</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center">
+              <div className="text-4xl mb-3">🔗</div>
+              <h4 className="font-semibold text-gray-200 mb-2">Immutable Chain</h4>
+              <p className="text-sm text-gray-400">
+                Each block is cryptographically linked to the previous block, making tampering impossible
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl mb-3">🔒</div>
+              <h4 className="font-semibold text-gray-200 mb-2">Secure Hashing</h4>
+              <p className="text-sm text-gray-400">
+                SHA-256 encryption ensures data integrity and authenticity
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl mb-3">👁️</div>
+              <h4 className="font-semibold text-gray-200 mb-2">Full Transparency</h4>
+              <p className="text-sm text-gray-400">
+                All transactions are publicly viewable and verifiable
+              </p>
+            </div>
           </div>
-          <div className="text-center">
-            <div className="text-4xl mb-3">🔒</div>
-            <h4 className="font-semibold text-gray-200 mb-2">Secure Hashing</h4>
-            <p className="text-sm text-gray-400">
-              SHA-256 encryption ensures data integrity and authenticity
-            </p>
-          </div>
-          <div className="text-center">
-            <div className="text-4xl mb-3">👁️</div>
-            <h4 className="font-semibold text-gray-200 mb-2">Full Transparency</h4>
-            <p className="text-sm text-gray-400">
-              All transactions are publicly viewable and verifiable
-            </p>
-          </div>
-        </div>
-      </motion.div>
+        </motion.div>
       )}
     </div>
   );
