@@ -9,7 +9,7 @@ const MyBids = () => {
   const { user } = useAuth();
   const [bids, setBids] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all'); // all, winning, outbid, won, lost
+  const [filter, setFilter] = useState('all');
 
   useEffect(() => {
     fetchMyBids();
@@ -39,16 +39,46 @@ const MyBids = () => {
     }
   };
 
+  const handleDownloadCSV = () => {
+    if (bids.length === 0) {
+      toast.error('No bids to download');
+      return;
+    }
+
+    const headers = ['Auction', 'Symbol', 'My Bid ($)', 'Current Bid ($)', 'Status', 'Auction Status', 'Bid Time'];
+
+    const rows = bids.map(bid => [
+      bid.auction?.cryptoName || 'N/A',
+      bid.auction?.cryptoSymbol || 'N/A',
+      bid.bidAmount,
+      bid.auction?.currentBid || 0,
+      bid.status,
+      bid.auction?.status || 'N/A',
+      new Date(bid.createdAt).toLocaleString(),
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `my-bids-${user?.name || 'bidder'}-${new Date().toLocaleDateString()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('CSV downloaded successfully!');
+  };
+
   const calculateTimeLeft = (endDate) => {
     const now = new Date();
     const end = new Date(endDate);
     const diff = end - now;
-    
     if (diff <= 0) return 'Ended';
-    
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    
     if (days > 0) return `${days}d ${hours}h`;
     return `${hours}h`;
   };
@@ -65,7 +95,6 @@ const MyBids = () => {
     return `${days} day${days > 1 ? 's' : ''} ago`;
   };
 
-  // Precompute my highest bid per auction (a bidder can bid multiple times)
   const myMaxBidByAuction = bids.reduce((acc, bid) => {
     const auctionId = bid.auction?._id;
     if (!auctionId) return acc;
@@ -75,12 +104,10 @@ const MyBids = () => {
     return acc;
   }, {});
 
-  // Helper function to determine if a bid is winning
   const isBidWinning = (bid) => {
     const auctionId = bid.auction?._id;
     const currentBid = Number(bid.auction?.currentBid);
     const myMaxBid = myMaxBidByAuction[auctionId] ?? 0;
-    
     return (
       Boolean(auctionId) &&
       bid.auction?.status === 'active' &&
@@ -91,16 +118,11 @@ const MyBids = () => {
     );
   };
 
-  // Calculate statistics
   const totalBids = bids.length;
   const totalSpent = bids.reduce((sum, bid) => sum + bid.bidAmount, 0);
-  
-  // Count actual won bids from API status
   const wonBids = bids.filter(bid => bid.status === 'won').length;
-  
   const outbidCount = bids.filter(bid => bid.status === 'outbid').length;
 
-  // Filter bids
   const filteredBids = bids.filter(bid => {
     if (filter === 'all') return true;
     if (filter === 'won') return bid.status === 'won';
@@ -130,14 +152,24 @@ const MyBids = () => {
           <h1 className="text-2xl sm:text-3xl font-bold gradient-text mb-2">My Bids</h1>
           <p className="text-gray-400 text-sm sm:text-base">Track all your bidding activity</p>
         </div>
-        <button
-          onClick={refreshBids}
-          className="btn btn-secondary whitespace-nowrap"
-          title="Refresh bids data"
-        >
-          <span className="mr-2">🔄</span>
-          Refresh
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={refreshBids}
+            className="btn btn-secondary whitespace-nowrap"
+            title="Refresh bids data"
+          >
+            <span className="mr-2">🔄</span>
+            Refresh
+          </button>
+          <button
+            onClick={handleDownloadCSV}
+            className="btn btn-primary whitespace-nowrap"
+            title="Download bid history as CSV"
+          >
+            <span className="mr-2">📥</span>
+            Download CSV
+          </button>
+        </div>
       </motion.div>
 
       {/* Stats */}
@@ -202,7 +234,7 @@ const MyBids = () => {
         className="card"
       >
         <h3 className="text-xl font-semibold mb-6 text-gray-200">
-          {filter === 'all' ? 'All Bids' : 
+          {filter === 'all' ? 'All Bids' :
            filter === 'won' ? 'Won Auctions' :
            filter === 'outbid' ? 'Outbid' : 'Filtered Bids'} ({filteredBids.length})
         </h3>
@@ -210,18 +242,16 @@ const MyBids = () => {
         {filteredBids.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">
-              {filter === 'all' ? '🎯' : 
-               filter === 'won' ? '🏆' : '📉'}
+              {filter === 'all' ? '🎯' : filter === 'won' ? '🏆' : '📉'}
             </div>
             <h3 className="text-xl font-semibold text-gray-300 mb-2">
-              No {filter === 'all' ? 'Bids' : 
-                   filter === 'won' ? 'Won Auctions' : 'Outbid'} Yet
+              No {filter === 'all' ? 'Bids' : filter === 'won' ? 'Won Auctions' : 'Outbid'} Yet
             </h3>
             <p className="text-gray-400 mb-6">
-              {filter === 'all' 
+              {filter === 'all'
                 ? 'Browse auctions and place your first bid!'
                 : filter === 'won'
-                ? 'You haven\'t won any auctions yet. Keep bidding!'
+                ? "You haven't won any auctions yet. Keep bidding!"
                 : 'All your bids are still active!'}
             </p>
             {filter === 'all' && (
@@ -249,10 +279,7 @@ const MyBids = () => {
                 <tbody>
                   {filteredBids.map((bid) => {
                     const auctionEnded = bid.auction?.status === 'completed';
-                    const auctionId = bid.auction?._id;
-                    const currentBid = Number(bid.auction?.currentBid);
                     const isWinning = isBidWinning(bid);
-                    
                     return (
                       <tr key={bid._id} className="border-b border-border/50 hover:bg-background-tertiary/30 transition-colors">
                         <td className="py-4 px-4">
@@ -262,40 +289,25 @@ const MyBids = () => {
                           </div>
                         </td>
                         <td className="py-4 px-4">
-                          <span className="text-primary-400 font-bold">
-                            ${bid.bidAmount.toLocaleString()}
-                          </span>
+                          <span className="text-primary-400 font-bold">${bid.bidAmount.toLocaleString()}</span>
                         </td>
                         <td className="py-4 px-4">
-                          <span className="text-gray-300">
-                            ${(bid.auction?.currentBid || 0).toLocaleString()}
-                          </span>
+                          <span className="text-gray-300">${(bid.auction?.currentBid || 0).toLocaleString()}</span>
                         </td>
                         <td className="py-4 px-4">
                           <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                            bid.status === 'won'
-                              ? 'bg-green-900/30 text-green-400'
-                              : bid.status === 'lost'
-                              ? 'bg-red-900/30 text-red-400'
-                              : isWinning
-                              ? 'bg-green-900/30 text-green-400'
-                              : bid.status === 'outbid'
-                              ? 'bg-red-900/30 text-red-400'
-                              : auctionEnded
-                              ? 'bg-gray-700 text-gray-400'
-                              : 'bg-yellow-900/30 text-yellow-400'
+                            bid.status === 'won' ? 'bg-green-900/30 text-green-400' :
+                            bid.status === 'lost' ? 'bg-red-900/30 text-red-400' :
+                            isWinning ? 'bg-green-900/30 text-green-400' :
+                            bid.status === 'outbid' ? 'bg-red-900/30 text-red-400' :
+                            auctionEnded ? 'bg-gray-700 text-gray-400' :
+                            'bg-yellow-900/30 text-yellow-400'
                           }`}>
-                            {bid.status === 'won'
-                              ? '🏆 Won'
-                              : bid.status === 'lost'
-                              ? '❌ Lost'
-                              : isWinning
-                              ? '🏆 Winning'
-                              : bid.status === 'outbid'
-                              ? '📉 Outbid'
-                              : auctionEnded
-                              ? 'Ended'
-                              : bid.status}
+                            {bid.status === 'won' ? '🏆 Won' :
+                             bid.status === 'lost' ? '❌ Lost' :
+                             isWinning ? '🏆 Winning' :
+                             bid.status === 'outbid' ? '📉 Outbid' :
+                             auctionEnded ? 'Ended' : bid.status}
                           </span>
                         </td>
                         <td className="py-4 px-4">
@@ -304,8 +316,8 @@ const MyBids = () => {
                             {bid.auction?.endDate && (
                               <div className="text-xs text-gray-500">
                                 {calculateTimeLeft(bid.auction.endDate) === 'Ended'
-                              ? 'Ended'
-                              : `${calculateTimeLeft(bid.auction.endDate)} left`}
+                                  ? 'Ended'
+                                  : `${calculateTimeLeft(bid.auction.endDate)} left`}
                               </div>
                             )}
                           </div>
@@ -340,10 +352,7 @@ const MyBids = () => {
             <div className="lg:hidden space-y-4">
               {filteredBids.map((bid) => {
                 const auctionEnded = bid.auction?.status === 'completed';
-                const auctionId = bid.auction?._id;
-                const currentBid = Number(bid.auction?.currentBid);
                 const isWinning = isBidWinning(bid);
-                
                 return (
                   <div key={bid._id} className="bg-background-tertiary/30 rounded-lg p-4 border border-border/50">
                     <div className="flex justify-between items-start mb-3">
@@ -352,32 +361,20 @@ const MyBids = () => {
                         <p className="text-sm text-gray-500">{bid.auction?.cryptoSymbol || 'N/A'}</p>
                       </div>
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        bid.status === 'won'
-                          ? 'bg-green-900/30 text-green-400'
-                          : bid.status === 'lost'
-                          ? 'bg-red-900/30 text-red-400'
-                          : isWinning
-                          ? 'bg-green-900/30 text-green-400'
-                          : bid.status === 'outbid'
-                          ? 'bg-red-900/30 text-red-400'
-                          : auctionEnded
-                          ? 'bg-gray-700 text-gray-400'
-                          : 'bg-yellow-900/30 text-yellow-400'
+                        bid.status === 'won' ? 'bg-green-900/30 text-green-400' :
+                        bid.status === 'lost' ? 'bg-red-900/30 text-red-400' :
+                        isWinning ? 'bg-green-900/30 text-green-400' :
+                        bid.status === 'outbid' ? 'bg-red-900/30 text-red-400' :
+                        auctionEnded ? 'bg-gray-700 text-gray-400' :
+                        'bg-yellow-900/30 text-yellow-400'
                       }`}>
-                        {bid.status === 'won'
-                          ? '🏆 Won'
-                          : bid.status === 'lost'
-                          ? '❌ Lost'
-                          : isWinning
-                          ? '🏆 Winning'
-                          : bid.status === 'outbid'
-                          ? '📉 Outbid'
-                          : auctionEnded
-                          ? 'Ended'
-                          : bid.status}
+                        {bid.status === 'won' ? '🏆 Won' :
+                         bid.status === 'lost' ? '❌ Lost' :
+                         isWinning ? '🏆 Winning' :
+                         bid.status === 'outbid' ? '📉 Outbid' :
+                         auctionEnded ? 'Ended' : bid.status}
                       </span>
                     </div>
-                    
                     <div className="grid grid-cols-2 gap-3 mb-4">
                       <div>
                         <p className="text-xs text-gray-500 mb-1">My Bid</p>
@@ -402,17 +399,14 @@ const MyBids = () => {
                         </p>
                       </div>
                     </div>
-                    
                     <div className="flex justify-between items-center pt-3 border-t border-border/30">
-                      <div className="flex items-center gap-2">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          bid.auction?.status === 'active'
-                            ? 'bg-green-900/30 text-green-400'
-                            : 'bg-gray-700 text-gray-400'
-                        }`}>
-                          {bid.auction?.status || 'N/A'}
-                        </span>
-                      </div>
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        bid.auction?.status === 'active'
+                          ? 'bg-green-900/30 text-green-400'
+                          : 'bg-gray-700 text-gray-400'
+                      }`}>
+                        {bid.auction?.status || 'N/A'}
+                      </span>
                       {bid.auction && (
                         <Link
                           to={`/bidder/auction/${bid.auction._id}`}
@@ -430,7 +424,6 @@ const MyBids = () => {
         )}
       </motion.div>
 
-      {/* Empty State */}
       {bids.length === 0 && (
         <div className="card text-center py-12">
           <div className="text-6xl mb-4">🎯</div>
