@@ -1,32 +1,6 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
-function requireEnv(name) {
-  const value = process.env[name];
-  if (!value) throw new Error(`Missing env var: ${name}`);
-  return value;
-}
-
-export function createTransport() {
-  const gmailUser = process.env.GMAIL_USER;
-  const gmailPass = process.env.GMAIL_PASS;
-
-  if (gmailUser && gmailPass) {
-    return nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      auth: {
-        user: gmailUser,
-        pass: gmailPass,
-      },
-      tls: {
-        rejectUnauthorized: false,
-      },
-    });
-  }
-
-  requireEnv('GMAIL_USER');
-}
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function sendCongratsEmail({
   to,
@@ -38,28 +12,9 @@ export async function sendCongratsEmail({
   quantity,
   winningBid,
 }) {
-  const transporter = createTransport();
-
-  const from = process.env.MAIL_FROM || process.env.GMAIL_USER;
-  if (!from) throw new Error('Missing env var: MAIL_FROM (or GMAIL_USER)');
+  const from = process.env.MAIL_FROM || 'onboarding@resend.dev';
 
   const subject = `${sellerName || 'Seller'}: Congratulations! You won ${cryptoName} (${cryptoSymbol})`;
-
-  const sellerLine = sellerName ? `${sellerName}` : 'The seller';
-  const sellerContactLine = sellerEmail ? `Seller contact: ${sellerEmail}\n` : '';
-
-  const text =
-    `Hi ${bidderName || 'there'},\n\n` +
-    `${sellerLine} wants to congratulate you — you have WON the auction!\n\n` +
-    `Auction details:\n` +
-    `- Asset: ${cryptoName} (${cryptoSymbol})\n` +
-    `- Quantity: ${quantity}\n` +
-    `- Winning Bid: $${winningBid}\n\n` +
-    `${sellerContactLine}` +
-    `Congrats\n\n` +
-    `Best regards,\n` +
-    `${sellerName || 'Seller'}\n` +
-    `via CryptoBid`;
 
   const html = `
     <div style="background:#0b1020;padding:24px">
@@ -106,12 +61,17 @@ export async function sendCongratsEmail({
     </div>
   `;
 
-  return transporter.sendMail({
+  const { data, error } = await resend.emails.send({
     from,
     to,
     replyTo: sellerEmail || undefined,
     subject,
-    text,
     html,
   });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
 }
