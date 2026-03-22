@@ -52,8 +52,12 @@ export const sendCongratsToWinner = async (req, res) => {
       });
     }
 
+    // For demo/testing — send to your own email
+    // In production replace with: auction.highestBidder.email
+    const recipientEmail = process.env.TEST_EMAIL || auction.highestBidder.email;
+
     await sendCongratsEmail({
-      to: auction.highestBidder.email,
+      to: recipientEmail,
       bidderName: auction.highestBidder.name,
       sellerName: auction.seller?.name,
       sellerEmail: auction.seller?.email,
