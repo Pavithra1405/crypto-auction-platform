@@ -13,8 +13,8 @@ export function createTransport() {
   if (gmailUser && gmailPass) {
     return nodemailer.createTransport({
       host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
+      port: 587,
+      secure: false,
       auth: {
         user: gmailUser,
         pass: gmailPass,
