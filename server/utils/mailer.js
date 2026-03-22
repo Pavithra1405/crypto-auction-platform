@@ -7,33 +7,25 @@ function requireEnv(name) {
 }
 
 export function createTransport() {
-  // Supports Gmail or any SMTP provider
-  const host = process.env.SMTP_HOST;
-  const port = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : undefined;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-
-  if (host && port && user && pass) {
-    return nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465,
-      auth: { user, pass },
-    });
-  }
-
-  // Fallback: Gmail style envs
   const gmailUser = process.env.GMAIL_USER;
   const gmailPass = process.env.GMAIL_PASS;
+
   if (gmailUser && gmailPass) {
     return nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user: gmailUser, pass: gmailPass },
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: {
+        user: gmailUser,
+        pass: gmailPass,
+      },
+      tls: {
+        rejectUnauthorized: false,
+      },
     });
   }
 
-  // If none configured, throw with a helpful message
-  requireEnv('SMTP_HOST or GMAIL_USER');
+  requireEnv('GMAIL_USER');
 }
 
 export async function sendCongratsEmail({
@@ -48,8 +40,8 @@ export async function sendCongratsEmail({
 }) {
   const transporter = createTransport();
 
-  const from = process.env.MAIL_FROM || process.env.SMTP_USER || process.env.GMAIL_USER;
-  if (!from) throw new Error('Missing env var: MAIL_FROM (or SMTP_USER/GMAIL_USER)');
+  const from = process.env.MAIL_FROM || process.env.GMAIL_USER;
+  if (!from) throw new Error('Missing env var: MAIL_FROM (or GMAIL_USER)');
 
   const subject = `${sellerName || 'Seller'}: Congratulations! You won ${cryptoName} (${cryptoSymbol})`;
 
