@@ -1,6 +1,7 @@
-import { Resend } from 'resend';
+import * as Brevo from '@getbrevo/brevo';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const apiInstance = new Brevo.TransactionalEmailsApi();
+apiInstance.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY;
 
 export async function sendCongratsEmail({
   to,
@@ -12,11 +13,22 @@ export async function sendCongratsEmail({
   quantity,
   winningBid,
 }) {
-  const from = process.env.MAIL_FROM || 'onboarding@resend.dev';
+  const sendSmtpEmail = new Brevo.SendSmtpEmail();
 
-  const subject = `${sellerName || 'Seller'}: Congratulations! You won ${cryptoName} (${cryptoSymbol})`;
+  sendSmtpEmail.subject = `Congratulations! You won ${cryptoName} (${cryptoSymbol})`;
 
-  const html = `
+  sendSmtpEmail.to = [{ email: to, name: bidderName || 'Bidder' }];
+
+  sendSmtpEmail.sender = {
+    name: sellerName || 'Crypto Auction Platform',
+    email: process.env.BREVO_SENDER_EMAIL || 'projectmailm@gmail.com',
+  };
+
+  if (sellerEmail) {
+    sendSmtpEmail.replyTo = { email: sellerEmail, name: sellerName || 'Seller' };
+  }
+
+  sendSmtpEmail.htmlContent = `
     <div style="background:#0b1020;padding:24px">
       <div style="max-width:640px;margin:0 auto;background:#111827;border:1px solid #1f2937;border-radius:16px;overflow:hidden">
         <div style="padding:22px 22px 14px;background:linear-gradient(135deg,#1d4ed8,#7c3aed)">
@@ -61,17 +73,6 @@ export async function sendCongratsEmail({
     </div>
   `;
 
-  const { data, error } = await resend.emails.send({
-    from,
-    to,
-    replyTo: sellerEmail || undefined,
-    subject,
-    html,
-  });
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return data;
+  const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
+  return response;
 }
