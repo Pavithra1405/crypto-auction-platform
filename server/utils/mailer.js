@@ -21,7 +21,7 @@ export async function sendCongratsEmail({
     to: [{ email: to, name: bidderName || 'Bidder' }],
     sender: {
       name: sellerName || 'Crypto Auction Platform',
-      email: process.env.BREVO_SENDER_EMAIL || 'projectmailm@gmail.com',
+      email: process.env.BREVO_SENDER_EMAIL || 'pavithramurugesan1405@gmail.com',
     },
     ...(sellerEmail && {
       replyTo: { email: sellerEmail, name: sellerName || 'Seller' },
